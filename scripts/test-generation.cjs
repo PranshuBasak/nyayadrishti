@@ -1,0 +1,4 @@
+const fs=require('fs');
+const key=fs.readFileSync('.env.local','utf8').match(/^GEMINI_API_KEY=(.*)$/m)[1].trim().replace(/^["']|["']$/g,'');
+const model=process.argv[2]||'gemini-2.5-flash';
+fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{parts:[{text:process.argv[3]?'Find the official India Code website.':'Reply with OK'}]}],...(process.argv[3]?{tools:[{google_search:{}}]}:{}),generationConfig:{maxOutputTokens:1000,thinkingConfig:{thinkingBudget:0}}}),signal:AbortSignal.timeout(30000)}).then(async r=>{const d=await r.json();console.log(JSON.stringify({status:r.status,error:d.error?.message?.replaceAll(key,'[redacted]'),text:d.candidates?.[0]?.content?.parts}));}).catch(e=>console.log(e.message));

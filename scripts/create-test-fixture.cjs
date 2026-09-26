@@ -1,0 +1,6 @@
+const fs=require('fs');
+fs.mkdirSync('tests/fixtures',{recursive:true});
+const lines=['SYNTHETIC TEST AGREEMENT','1. RENT: The tenant pays INR 10000 per month.','2. DEPOSIT: A refundable security deposit of INR 20000.','3. TERMINATION: Either party may give 30 days written notice.'];
+const content='BT /F1 14 Tf 50 760 Td '+lines.map((s,i)=>(i?'0 -25 Td ':'')+'('+s+') Tj').join('\n')+' ET';
+const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Kids [3 0 R] /Count 1 >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>','<< /Length '+Buffer.byteLength(content)+' >>\nstream\n'+content+'\nendstream'];
+let pdf='%PDF-1.4\n';const offsets=[0];objects.forEach((o,i)=>{offsets.push(Buffer.byteLength(pdf));pdf+=(i+1)+' 0 obj\n'+o+'\nendobj\n';});const xref=Buffer.byteLength(pdf);pdf+='xref\n0 6\n0000000000 65535 f \n'+offsets.slice(1).map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF';fs.writeFileSync('tests/fixtures/sample-agreement.pdf',pdf);fs.writeFileSync('tests/fixtures/sample-agreement.txt',lines.join('\n'));console.log('Created synthetic PDF and TXT fixtures.');

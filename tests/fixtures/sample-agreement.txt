@@ -1,0 +1,4 @@
+SYNTHETIC TEST AGREEMENT
+1. RENT: The tenant pays INR 10000 per month.
+2. DEPOSIT: A refundable security deposit of INR 20000.
+3. TERMINATION: Either party may give 30 days written notice.

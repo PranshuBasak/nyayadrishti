@@ -1,0 +1,32 @@
+const fs = require('fs');
+const assert = require('node:assert/strict');
+const ts = require('typescript');
+require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText, filename);
+const {segmentLegalClauses} = require('../src/lib/pdfParser.ts');
+const {compareText,escapeHtml} = require('../src/lib/workspace.ts');
+const {languages} = require('../src/lib/languages.ts');
+const keys = Object.keys(require('../src/locales/en.json')).sort();
+assert.equal(languages.length,15);
+for(const language of languages){
+ const locale = require('../src/locales/'+language.code+'.json');
+ assert.deepEqual(Object.keys(locale).sort(),keys,language.code+' has complete dictionary');
+ for(const key of keys) assert.ok(typeof locale[key]==='string'&&locale[key].trim(),language.code+': '+key);
+ if(language.code!=='en') assert.ok(Object.values(locale).filter(v=>/[^\x00-\x7F]/.test(v)).length>keys.length*.9,language.code+' uses native script');
+}
+const clauses=segmentLegalClauses('Test agreement\n1. RENT: Pay INR 10000 monthly.\n2. DEPOSIT: Security deposit is INR 20000.\n3. EXIT: Either party may terminate on 30 days notice.\n4. NON-COMPETE: Do not compete for two years.');
+assert.equal(clauses.length,5);
+assert.equal(clauses[2].attentionLevel,'high_attention');
+assert.equal(clauses[4].attentionLevel,'legal_review_recommended');
+assert.equal(clauses[3].attentionLevel,'review_recommended');
+assert.equal(segmentLegalClauses('Short text.').length,1,'short documents are not discarded');
+assert.equal(segmentLegalClauses('').length,0);
+const regional=segmentLegalClauses('१. किराया: प्रति माह 10000 रुपये देय हैं।\n२. सुरक्षा जमा: 20000 रुपये जमा होंगे।');
+assert.equal(regional.length,2,'Devanagari section numbering is segmented');
+assert.equal(regional[1].attentionLevel,'high_attention','regional deposit keywords are screened');
+const a='1. Rent: INR 10000\n2. Notice: 30 days\n3. Removed term';
+const b='1. Rent: INR 12000\n2. Notice: 30 days\n4. Added term';
+assert.deepEqual(compareText(a,b).map(r=>r.status),['changed','unchanged','removed','added']);
+assert.equal(compareText('same\nsame','same').filter(r=>r.status==='removed').length,1,'duplicate lines are matched once');
+assert.equal(compareText(a,a).every(r=>r.status==='unchanged'),true);
+assert.equal(escapeHtml('<script>"&\''),'&lt;script&gt;&quot;&amp;&#39;');
+console.log('PASS: 15 complete locales, native scripts, clause segmentation, risk flags, real comparison, duplicate lines, report escaping.');
