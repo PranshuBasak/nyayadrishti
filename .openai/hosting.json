@@ -1,17 +1,1 @@
-{
-  "project_id": "appgprj_6ab7b65396c88191bfc064109260b0f0",
-  "build": {
-    "command": "npm run build:sites"
-  },
-  "worker": {
-    "entrypoint": "dist/sites/worker.js",
-    "compatibility_date": "2026-09-26",
-    "compatibility_flags": [
-      "nodejs_compat",
-      "global_fetch_strictly_public"
-    ]
-  },
-  "static": {
-    "directory": "dist/client"
-  }
-}
+{"project_id":"appgprj_6ab7b65396c88191bfc064109260b0f0","worker":{"entrypoint":"dist/sites/worker.js"},"static":{"directory":"dist/client"}}
