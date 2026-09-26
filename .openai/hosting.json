@@ -12,6 +12,6 @@
     ]
   },
   "static": {
-    "directory": ".open-next/assets"
+    "directory": "dist/client"
   }
 }

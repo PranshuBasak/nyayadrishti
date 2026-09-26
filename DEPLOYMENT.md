@@ -20,3 +20,5 @@ No static export is sufficient: the application needs server routes for generati
 ## Operational limits
 
 The throttling is per instance and is not an authentication system or a global billing ceiling. Monitor provider usage; configure provider-side budgets/quotas before wider use. Never put credentials into `NEXT_PUBLIC_*`. Replace any key exposed outside its intended secret store.
+
+Build Sites archives with local credential files excluded from the build context. OpenNext can bundle server environment files. Restore local credentials after the build, scan the Worker and static assets, and provide secrets only through Sites runtime variables. Copy .open-next/assets to dist/client for the Sites archive.
