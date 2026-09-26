@@ -1464,3 +1464,12 @@ footer span {
     background: white;
   }
 }
+.live-panel { margin: 0 1.25rem 1rem; padding: 1.1rem; border: 1px solid #cbdad0; background: #f3f7f1; border-radius: 16px; }
+.live-panel.is-live { border-color: #327353; box-shadow: 0 0 0 3px #32735312; }
+.live-heading { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.live-heading > div { flex:1; }
+.live-heading h3 { margin:0 0 4px; }
+.live-heading p, .live-status { font-size:.85rem; margin:6px 0 12px; }
+.live-captions { padding:10px 14px; background:white; border-radius:10px; max-height:180px; overflow:auto; margin:10px 0; }
+.live-panel [aria-pressed="true"] { background:#d9eadf; border-color:#327353; }
+@media(max-width:600px) { .live-panel { margin:0 .65rem .75rem; padding:.85rem; } }

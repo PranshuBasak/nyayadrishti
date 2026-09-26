@@ -44,10 +44,16 @@ export function Sources({ sources }: { sources: Source[] }) {
 }
 export function Busy() {
   const { t } = useLocale();
+  const [retry, setRetry] = useState(false);
+  useEffect(() => {
+    const listener = () => setRetry(true);
+    window.addEventListener("nyaya-ai-retry", listener);
+    return () => window.removeEventListener("nyaya-ai-retry", listener);
+  }, []);
   return (
     <div role="status" className="busy">
       <Loader2 size={17} className="spin" />
-      {t("processing")}
+      {t(retry ? "tryingModel" : "processing")}
     </div>
   );
 }

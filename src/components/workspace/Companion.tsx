@@ -19,6 +19,8 @@ import { getSessionMessages, saveMessage, StoredMessage } from "@/lib/db";
 import { languages } from "@/lib/languages";
 import { useLocale } from "@/lib/i18n";
 import { Busy, RichText, Sources } from "./Common";
+import { LivePanel } from "./LivePanel";
+import { liveContext } from "@/lib/live/config";
 export function Companion({
   doc,
   selected,
@@ -28,7 +30,7 @@ export function Companion({
   selected: ParsedClause | null;
   research: AIResult | null;
 }) {
-  const { t, language } = useLocale();
+  const { t, language, aiError } = useLocale();
   const [messages, setMessages] = useState<
     (StoredMessage & { sources?: AIResult["sources"] })[]
   >([]);
@@ -39,6 +41,8 @@ export function Companion({
   const [capture, setCapture] = useState<"camera" | "screen" | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState<string | null>(null);
+  const [liveActive, setLiveActive] = useState(false);
+  const transcriptIds = useRef(new Set<string>());
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const mediaVersion = useRef(0);
@@ -95,7 +99,7 @@ export function Companion({
       stream.current = media;
       setCapture(kind);
       media.getVideoTracks()[0].onended = stopMedia;
-    } catch {
+    } catch (e) {
       setError(t("mediaError"));
     }
   }
@@ -155,7 +159,7 @@ export function Companion({
       r.start();
       setListening(true);
       setError("");
-    } catch {
+    } catch (e) {
       setError(t("speechUnavailable"));
     }
   }
@@ -195,7 +199,7 @@ export function Companion({
     window.speechSynthesis.speak(utterance);
   }
   async function send(text = input) {
-    if (lock.current || (!text.trim() && !image)) return;
+    if (liveActive || lock.current || (!text.trim() && !image)) return;
     lock.current = true;
     setBusy(true);
     setError("");
@@ -276,7 +280,7 @@ export function Companion({
       }
     } catch (e) {
       if (alive.current) {
-        setError(t("aiError"));
+        setError(aiError(e));
         setInput(text);
       }
     } finally {
@@ -306,8 +310,8 @@ export function Companion({
       };
       await saveMessage(translated);
       if (alive.current) setMessages((prev) => [...prev, translated]);
-    } catch {
-      setError(t("aiError"));
+    } catch (e) {
+      setError(aiError(e));
     } finally {
       lock.current = false;
       if (alive.current) setBusy(false);
@@ -328,6 +332,53 @@ export function Companion({
             {languages.find((l) => l.code === language)?.native}
           </span>
         </div>
+        <LivePanel
+          key={doc.id + language}
+          disabled={busy}
+          context={liveContext(
+            doc.title,
+            selected?.text || "",
+            doc.rawText,
+            messages
+              .slice(-12)
+              .map((m) => m.role + ": " + m.content)
+              .join("\n"),
+            research ? JSON.stringify(research) : "",
+          )}
+          onActive={(active) => {
+            setLiveActive(active);
+            if (active) {
+              recognition.current?.abort();
+              setListening(false);
+              window.speechSynthesis?.cancel();
+              setSpeaking(null);
+              stopMedia();
+            }
+          }}
+          onTranscript={(id, role, text, interrupted) => {
+            if (transcriptIds.current.has(id)) return;
+            transcriptIds.current.add(id);
+            const message: StoredMessage = {
+              id,
+              sessionId,
+              role,
+              content:
+                text + (interrupted ? "\n[" + t("liveInterrupted") + "]" : ""),
+              timestamp: Date.now(),
+              language,
+            };
+            void saveMessage(message)
+              .then(() => {
+                if (alive.current)
+                  setMessages((prev) =>
+                    prev.some((m) => m.id === id) ? prev : [...prev, message],
+                  );
+              })
+              .catch(() => {
+                if (alive.current) setError(t("storageError"));
+              });
+          }}
+        />
         <div className="messages">
           {messages.length === 0 && (
             <div className="chat-welcome">
@@ -363,6 +414,7 @@ export function Companion({
                   <button
                     className="icon-button"
                     title={t("readAloud")}
+                    disabled={liveActive}
                     aria-label={t("readAloud")}
                     onClick={() => speak(msg)}
                   >
@@ -376,7 +428,7 @@ export function Companion({
                     className="icon-button"
                     title={t("translate")}
                     aria-label={t("translate")}
-                    disabled={busy}
+                    disabled={busy || liveActive}
                     onClick={() => translateMessage(msg)}
                   >
                     <Languages size={15} />
@@ -448,7 +500,7 @@ export function Companion({
             />
             <button
               className="button primary send"
-              disabled={busy || (!input.trim() && !image)}
+              disabled={busy || liveActive || (!input.trim() && !image)}
               aria-label={t("send")}
             >
               <Send size={18} />
@@ -458,6 +510,7 @@ export function Companion({
             <button
               className={"button subtle " + (listening ? "recording" : "")}
               onClick={dictate}
+              disabled={liveActive}
             >
               {listening ? <Square size={16} /> : <Mic size={16} />}{" "}
               {t(listening ? "stop" : "talk")}
@@ -465,6 +518,7 @@ export function Companion({
             <button
               className="button subtle"
               onClick={() => startMedia("camera")}
+              disabled={liveActive}
             >
               <Camera size={16} />
               {t("camera")}
@@ -472,6 +526,7 @@ export function Companion({
             <button
               className="button subtle"
               onClick={() => startMedia("screen")}
+              disabled={liveActive}
             >
               <Monitor size={16} />
               {t("screen")}

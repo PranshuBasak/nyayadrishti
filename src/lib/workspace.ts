@@ -15,6 +15,7 @@ export interface Source {
 export interface AIResult {
   text: string;
   sources: Source[];
+  modelUsed?: string;
 }
 export interface CaseData {
   issueType: string;
@@ -54,7 +55,10 @@ export async function runAI(
   const { signal, ...body } = options;
   const response = await fetch("/api/gemini", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/x-ndjson",
+    },
     signal: signal || AbortSignal.timeout(65000),
     body: JSON.stringify({
       prompt,
@@ -62,11 +66,40 @@ export async function runAI(
       systemInstruction: `Respond entirely in ${languageName(language)} using its native script, including headings. Preserve names, amounts, dates and original quotations accurately. Use concise readable paragraphs. Never claim to have verified a source unless it was actually retrieved. If context is incomplete, say so.`,
     }),
   });
-  const data = await response.json();
-  if (!response.ok || !data.text)
-    throw new Error(data.error || "AI_UNAVAILABLE");
+  let data;
+  if (
+    response.ok &&
+    response.headers.get("content-type")?.includes("application/x-ndjson")
+  ) {
+    const reader = response.body!.getReader(),
+      decoder = new TextDecoder();
+    let pending = "";
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        pending += decoder.decode(value, { stream: true });
+        let boundary;
+        while ((boundary = pending.indexOf("\n")) >= 0) {
+          const line = pending.slice(0, boundary);
+          pending = pending.slice(boundary + 1);
+          if (!line) continue;
+          const event = JSON.parse(line);
+          if (event.type === "retry")
+            window.dispatchEvent(new Event("nyaya-ai-retry"));
+          if (event.type === "error") throw new Error(event.error);
+          if (event.type === "result") data = event;
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  } else data = await response.json();
+  if (!response.ok || !data?.text)
+    throw new Error(data?.error || "AI_UNAVAILABLE");
   return {
     text: data.text,
+    modelUsed: data.modelUsed,
     sources: (data.sources || []).filter((s: Source) =>
       /^https:\/\//.test(s.url),
     ),

@@ -37,5 +37,20 @@ export const dictionaries: Record<Language, Record<Key, string>> = {
 export const LocaleContext = createContext<Language>("en");
 export function useLocale() {
   const language = useContext(LocaleContext);
-  return { language, t: (key: Key) => dictionaries[language][key] };
+  const t = (key: Key) => dictionaries[language][key];
+  const aiError = (error: unknown) => {
+    const code = error instanceof Error ? error.message : "";
+    return t(
+      code === "AI_RATE_LIMIT" || code === "AI_BUSY"
+        ? "quotaLimit"
+        : code === "AI_AUTH_ERROR" || code === "AI_NOT_CONFIGURED"
+          ? "aiAuthError"
+          : code.startsWith("AI_GROUNDING")
+            ? "groundingUnavailable"
+            : code === "AI_SAFETY"
+              ? "aiSafety"
+              : "aiError",
+    );
+  };
+  return { language, t, aiError };
 }

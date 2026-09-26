@@ -29,7 +29,7 @@ export function Prepare({
   onChange: (data: CaseData) => void;
   onSave: () => Promise<void>;
 }) {
-  const { t, language } = useLocale();
+  const { t, language, aiError } = useLocale();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -119,8 +119,8 @@ export function Prepare({
         language,
       );
       update("draft", r.text);
-    } catch {
-      setError(t("aiError"));
+    } catch (e) {
+      setError(aiError(e));
     } finally {
       setBusy(false);
     }
@@ -172,7 +172,7 @@ export function Prepare({
               try {
                 await onSave();
                 setSaved(true);
-              } catch {
+              } catch (e) {
                 setError(t("storageError"));
               }
             }}

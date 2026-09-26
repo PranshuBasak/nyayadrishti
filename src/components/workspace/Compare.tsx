@@ -12,7 +12,7 @@ export function Compare({
   doc: Agreement;
   documents: Agreement[];
 }) {
-  const { t, language } = useLocale();
+  const { t, language, aiError } = useLocale();
   const [other, setOther] = useState("");
   const [rows, setRows] = useState<ReturnType<typeof compareText>>([]);
   const [busy, setBusy] = useState(false);
@@ -68,8 +68,8 @@ export function Compare({
           )
         ).text,
       );
-    } catch {
-      setError(t("aiError"));
+    } catch (e) {
+      setError(aiError(e));
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export function Compare({
                   setOther((await readAgreement(f)).rawText);
                   setRows([]);
                   setResult("");
-                } catch {
+                } catch (e) {
                   setError(t("invalidFile"));
                 }
               }}

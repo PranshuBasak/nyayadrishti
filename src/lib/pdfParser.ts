@@ -32,7 +32,7 @@ export async function parsePdfFile(file: File): Promise<ParsedDocumentResult> {
 
   // Set worker source
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   }
 
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -50,7 +50,7 @@ export async function parsePdfFile(file: File): Promise<ParsedDocumentResult> {
     fullText += `\n--- [Page ${i}] ---\n` + pageText;
   }
 
-  await pdf.destroy();
+  await loadingTask.destroy();
   const clauses = segmentLegalClauses(fullText, file.name);
 
   return {

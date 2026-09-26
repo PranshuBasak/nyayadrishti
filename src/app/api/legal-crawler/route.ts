@@ -18,7 +18,11 @@ export async function GET(req: NextRequest) {
   const response = await generate(
     new NextRequest(new URL("/api/gemini", req.url), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        ...Object.fromEntries(req.headers),
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
       body: JSON.stringify({
         prompt:
           "Search current Indian primary official legal sources for this query. Distinguish jurisdiction and cite sources. Query: " +

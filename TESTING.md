@@ -1,5 +1,20 @@
 # Verification record — 26 September 2026
 
+## Submission pass: Gemini Live and model fallback
+
+- Upgraded to Next.js 16.3.6, React 19.3 and PDF.js 6.3.289. Production build and TypeScript checks passed; `npm audit --omit=dev` reported zero vulnerabilities, including after adding the OpenNext adapter.
+- Added 26 localized labels to each dictionary: 167 strings in all 15 languages. Sanskrit Live speech is explicitly unavailable; Sanskrit text chat remains supported.
+- Automated provider tests passed: model priority, two-attempt bound, credential deduplication/rotation, cooldowns, no retry on authentication/safety/project-wide quota errors, grounding enforcement, input sizes, origin checks and Live token rate limiting.
+- Synthetic Live tests passed: audio input, all output parts, interruption, finalized captions, duplicate completion handling, mute, image frames, one resumable reconnect, no replay, cleanup, late-event protection and real AudioWorklet PCM resampling.
+- Real Gemini 3.8 Live smoke test: constrained ephemeral token creation succeeded; synthetic document-context question returned 12 audio chunks and the caption “The monthly rent is 10,000 INR.”
+- Real Live vision smoke test: synthetic receipt frame returned seven audio chunks and “The amount is INR 10000.” This verified the amount; the requested date was not returned.
+- Browser text chat after the model migration correctly answered the monthly rent from clause 1. PDF.js 6 imported the real synthetic PDF and extracted its introduction plus three numbered clauses without console errors.
+- Browser Live connection and End control worked. Microphone capture remained pending in the in-app browser, exposing an early “Listening” status bug. Startup now waits for capture readiness, times out unresolved permission after 15 seconds, and releases late-acquired streams.
+- Physical microphone conversation, camera capture and interactive screen-picker flows remain unverified; successful API audio/vision and synthetic transport tests are not claimed as physical-device tests.
+- OpenNext built successfully on Windows; Wrangler dry-run bundled the Worker at approximately 1.67 MB gzip. Deployment outcome and final browser checks are recorded below as they complete.
+
+The sections below record the earlier workspace pass and its limitations at that time.
+
 The application was built with `npm run build` and served with **`npm run start`**, as requested. Browser checks used the Codex in-app Chromium browser and synthetic test documents, never personal legal files.
 
 ## Passed

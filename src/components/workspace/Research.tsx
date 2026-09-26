@@ -5,7 +5,7 @@ import { runAI, AIResult } from "@/lib/workspace";
 import { useLocale } from "@/lib/i18n";
 import { Busy, RichText, Sources } from "./Common";
 export function Research({ onResult }: { onResult: (r: AIResult) => void }) {
-  const { t, language } = useLocale();
+  const { t, language, aiError } = useLocale();
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<AIResult>();
   const [busy, setBusy] = useState(false);
@@ -23,8 +23,8 @@ export function Research({ onResult }: { onResult: (r: AIResult) => void }) {
       );
       setResult(r);
       onResult(r);
-    } catch {
-      setError(t("aiError"));
+    } catch (e) {
+      setError(aiError(e));
     } finally {
       setBusy(false);
     }

@@ -115,7 +115,7 @@ export function DocumentPanel({
   onAsk: () => void;
   insights?: boolean;
 }) {
-  const { t, language } = useLocale();
+  const { t, language, aiError } = useLocale();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [busy, setBusy] = useState(false);
@@ -201,8 +201,8 @@ export function DocumentPanel({
           action,
         r.text,
       );
-    } catch {
-      if (requestVersion.current === version) setError(t("aiError"));
+    } catch (e) {
+      if (requestVersion.current === version) setError(aiError(e));
     } finally {
       if (requestVersion.current === version) setBusy(false);
     }
